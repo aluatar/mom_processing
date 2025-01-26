@@ -126,7 +126,7 @@ def get_orbital_numbers(
             if dataframe.loc[row,columns[c]] == max(dataframe.loc[row, columns[number_of_parameters+1]:]):
                 for i in range(number_of_parameters + 1):
                     ms_of_modes[i].append(dataframe.loc[row,columns[i]])    
-                ms_of_modes[2].append(c - number_of_parameters - 1)
+                ms_of_modes[number_of_parameters+1].append(c - number_of_parameters - 1)
                 
     new_columns = [columns[i] for i in range(number_of_parameters + 1)]
     new_columns.append('m')
