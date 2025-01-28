@@ -109,7 +109,65 @@ def pipeline_modes_vs_s(path: str) -> dict[int, dict[str, array]]:
     return mode_m_map
 
 
-def pipeline_modes_vs_scale(path: str):
+def pipeline_modes_vs_formfactor_parity(path: str):
+    import os, pandas
+    number_of_parameters = 1
+    df_list = []
+    for file in os.listdir(path):
+        if file.endswith('.csv'):
+            full_path = path + '/' + str(file)
+            df = import_data(path=full_path)
+            df = separate_characteristics_from_params(
+                    dataframe=df,
+                    number_of_params=number_of_parameters
+                )
+            df_list.append(df)
+
+    result = pandas.concat(df_list, ignore_index=False)
+    
+    result = result.sort_values(by=list(result.columns[0:2]))
+    result = result.reset_index(drop=True)
+    result = get_orbital_numbers(dataframe=result, number_of_parameters=1)
+    columns = df.columns
+
+    result = result.rename(columns={'m': 'p'})
+    result['p'] = [p if p == 1 else -1 for p in result['p']]
+
+    
+    result = result.sort_values(by=list(result.columns[0:2]))
+    result = result.reset_index(drop=True)
+
+    return result
+
+
+def pipeline_modes_vs_formfactor_m(path: str):
+    import os, pandas
+    number_of_parameters = 1
+    df_list = []
+    for file in os.listdir(path):
+        if file.endswith('.csv'):
+            full_path = path + '/' + str(file)
+            df = import_data(path=full_path)
+            df = separate_characteristics_from_params(
+                    dataframe=df,
+                    number_of_params=number_of_parameters
+                )
+            df_list.append(df)
+
+    result = pandas.concat(df_list, ignore_index=False)
+    
+    result = result.sort_values(by=list(result.columns[0:2]))
+    result = result.reset_index(drop=True)
+    result = get_orbital_numbers(dataframe=result, number_of_parameters=1)
+
+    
+    result = result.sort_values(by=list(result.columns[0:2]))
+    result = result.reset_index(drop=True)
+
+    return result
+
+
+def pipeline_modes_vs_formfactor_char(path: str):
     import os, pandas
     number_of_parameters = 1
     df_list = []
@@ -127,31 +185,5 @@ def pipeline_modes_vs_scale(path: str):
 
     result = result.sort_values(by=list(result.columns[0:2]))
     result = result.reset_index(drop=True)
-    result = get_orbital_numbers(dataframe=result, number_of_parameters=3)
-    columns = df.columns
-
-    parity_map ={
-        0: [0,0,0],
-        1: [0,0,1],
-        2: [0,1,0],
-        3: [1,0,0],
-       4: [0,1,1],
-       5: [1,0,1],
-        6: [1,1,0],
-        7: [1,1,1],
-    }
-    parities = [[],[],[]]
-
-    for m in result['m']:
-        parities[0].append(parity_map[m][0])
-        parities[1].append(parity_map[m][1])
-        parities[2].append(parity_map[m][2])
-
-    print(parities)
-
-    result['Px'] = parities[0]
-    result['Py'] = parities[1]
-    result['Pz'] = parities[2]
-    result = result.drop(columns=['m'])
 
     return result
