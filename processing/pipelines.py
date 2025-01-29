@@ -123,18 +123,23 @@ def pipeline_modes_vs_formfactor_parity(path: str):
                 )
             df_list.append(df)
 
-    result = pandas.concat(df_list, ignore_index=False)
+    if len(df_list) > 1:
+        result = pandas.concat(df_list, ignore_index=False)
+        result = result.reset_index(drop=True)
+
+    elif len(df_list) == 1:
+        result = df_list[0]
+    else:
+        raise IndexError
     
-    result = result.sort_values(by=list(result.columns[0:2]))
-    result = result.reset_index(drop=True)
     result = get_orbital_numbers(dataframe=result, number_of_parameters=1)
-    columns = df.columns
+    result['index'] = result.index
 
     result = result.rename(columns={'m': 'p'})
     result['p'] = [p if p == 1 else -1 for p in result['p']]
 
     
-    result = result.sort_values(by=list(result.columns[0:2]))
+    result = result.sort_values(by=['index'])
     result = result.reset_index(drop=True)
 
     return result
@@ -154,14 +159,20 @@ def pipeline_modes_vs_formfactor_m(path: str):
                 )
             df_list.append(df)
 
-    result = pandas.concat(df_list, ignore_index=False)
+    if len(df_list) > 1:
+        result = pandas.concat(df_list, ignore_index=False)
+        result = result.reset_index(drop=True)
+
+    elif len(df_list) == 1:
+        result = df_list[0]
+    else:
+        raise IndexError
     
-    result = result.sort_values(by=list(result.columns[0:2]))
-    result = result.reset_index(drop=True)
     result = get_orbital_numbers(dataframe=result, number_of_parameters=1)
+    result['index'] = result.index
 
     
-    result = result.sort_values(by=list(result.columns[0:2]))
+    result = result.sort_values(by=['index'])
     result = result.reset_index(drop=True)
 
     return result
@@ -181,9 +192,15 @@ def pipeline_modes_vs_formfactor_char(path: str):
                 )
             df_list.append(df)
 
-    result = pandas.concat(df_list, ignore_index=False)
+    if len(df_list) > 1:
+        result = pandas.concat(df_list, ignore_index=False)
+        result = result.reset_index(drop=True)
 
-    result = result.sort_values(by=list(result.columns[0:2]))
-    result = result.reset_index(drop=True)
-
+    elif len(df_list) == 1:
+        result = df_list[0]
+    else:
+        raise IndexError
+    
+    result['index'] = result.index
+    
     return result
