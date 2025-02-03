@@ -5,6 +5,7 @@ from numpy import (
     array,
     pi,
     unique,
+    abs,
 )
 
 from .utils import (
@@ -132,7 +133,7 @@ def pipeline_modes_vs_formfactor_parity(path: str):
 
     result = result.rename(columns={'m': 'p'})
     result['p'] = [p if p == 1 else -1 for p in result['p']]
-
+    result['ef_1'] = abs(result['ef_1'])
     
     result = result.sort_values(by=list(result.columns[0:2]))
     result = result.reset_index(drop=True)
