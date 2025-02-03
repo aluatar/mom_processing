@@ -4,6 +4,7 @@ from pandas import (
 )
 from numpy import (
     array,
+    transpose
 )
 from typing import Literal
 from logging import Logger
@@ -131,5 +132,67 @@ def get_orbital_numbers(
     new_columns = [columns[i] for i in range(number_of_parameters + 1)]
     new_columns.append('m')
     new_dataframe = DataFrame(array(ms_of_modes).T, columns=new_columns).sort_values(by=new_columns[:-1])
+
+    return new_dataframe
+
+
+def get_parities(
+        dataframe: DataFrame,
+        number_of_parameters: int | None=None,
+        ) -> DataFrame:
+    """
+    Utility for obtaining parity *p* from the table data.
+
+    Parameters:
+    -----------
+    
+    :param dataframe: DataFrame, dataframe with initial data
+    :param number_of_parameters: int, optional, number from 1 to inf of parameters that were varied in COMSOL parametric sweep
+
+    Returns:
+
+    :return: DataFrame with parity *p* assined to each mode
+    """
+
+    parity_map = {
+        0: [-1,-1,-1],
+        1: [1,-1,-1],
+        2: [-1,1,-1],
+        3: [-1,-1,1],
+        4: [1,1,-1],
+        5: [1,-1,1],
+        6: [-1,1,1],
+        7: [1,1,1]
+    }
+
+    if number_of_parameters is None:
+        number_of_parameters = 0
+        for column in dataframe.columns:
+            if column[:5] == 'param':
+                number_of_parameters += 1
+            elif column[:2] == 'ef' or column[:4] == 'char':
+                break
+            else:
+                logger.error(msg=f"Incorrect prefix. Define nymber of variable parameters explicitly or apply 'separate_characteristics_from_params' method to the dataframe")
+    
+
+    ps_of_modes = [[] for i in range(number_of_parameters + 4)]
+    columns = dataframe.columns
+
+    for row in range(dataframe.index.stop):
+        dataframe.loc[row,columns[number_of_parameters+1]:] = abs(dataframe.loc[row,columns[number_of_parameters+1]:])
+        for c in range(number_of_parameters+1, len(dataframe.loc[row])):
+
+            if dataframe.loc[row,columns[c]] == max(dataframe.loc[row, columns[number_of_parameters+1]:]):
+                for i in range(number_of_parameters + 1):
+                    ps_of_modes[i].append(dataframe.loc[row,columns[i]])  
+                parity = parity_map.get(c - number_of_parameters - 1)  
+                ps_of_modes[number_of_parameters+1].append(parity[0])
+                ps_of_modes[number_of_parameters+2].append(parity[1])
+                ps_of_modes[number_of_parameters+3].append(parity[2])
+                
+    new_columns = [columns[i] for i in range(number_of_parameters + 1)]
+    new_columns.extend(['px','py','pz'])
+    new_dataframe = DataFrame(array(ps_of_modes).T, columns=new_columns)
 
     return new_dataframe

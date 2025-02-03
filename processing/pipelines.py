@@ -12,6 +12,7 @@ from .utils import (
     import_data,
     separate_characteristics_from_params,
     get_orbital_numbers,
+    get_parities,
 )
 
 from abc import (
@@ -107,7 +108,7 @@ def pipeline_modes_vs_s(path: str) -> dict[int, dict[str, array]]:
             's': r
         }
         
-    return mode_m_map
+    return df
 
 
 def pipeline_modes_vs_formfactor_parity(path: str):
@@ -124,18 +125,23 @@ def pipeline_modes_vs_formfactor_parity(path: str):
                 )
             df_list.append(df)
 
-    result = pandas.concat(df_list, ignore_index=False)
+    if len(df_list) > 1:
+        result = pandas.concat(df_list, ignore_index=False)
+        result = result.reset_index(drop=True)
+
+    elif len(df_list) == 1:
+        result = df_list[0]
+    else:
+        raise IndexError
     
-    result = result.sort_values(by=list(result.columns[0:2]))
-    result = result.reset_index(drop=True)
     result = get_orbital_numbers(dataframe=result, number_of_parameters=1)
-    columns = df.columns
+    result['index'] = result.index
 
     result = result.rename(columns={'m': 'p'})
     result['p'] = [p if p == 1 else -1 for p in result['p']]
     result['ef_1'] = abs(result['ef_1'])
     
-    result = result.sort_values(by=list(result.columns[0:2]))
+    result = result.sort_values(by=['index'])
     result = result.reset_index(drop=True)
 
     return result
@@ -155,14 +161,20 @@ def pipeline_modes_vs_formfactor_m(path: str):
                 )
             df_list.append(df)
 
-    result = pandas.concat(df_list, ignore_index=False)
+    if len(df_list) > 1:
+        result = pandas.concat(df_list, ignore_index=False)
+        result = result.reset_index(drop=True)
+
+    elif len(df_list) == 1:
+        result = df_list[0]
+    else:
+        raise IndexError
     
-    result = result.sort_values(by=list(result.columns[0:2]))
-    result = result.reset_index(drop=True)
     result = get_orbital_numbers(dataframe=result, number_of_parameters=1)
+    result['index'] = result.index
 
     
-    result = result.sort_values(by=list(result.columns[0:2]))
+    result = result.sort_values(by=['index'])
     result = result.reset_index(drop=True)
 
     return result
@@ -182,9 +194,58 @@ def pipeline_modes_vs_formfactor_char(path: str):
                 )
             df_list.append(df)
 
-    result = pandas.concat(df_list, ignore_index=False)
+    if len(df_list) > 1:
+        result = pandas.concat(df_list, ignore_index=False)
+        result = result.reset_index(drop=True)
 
-    result = result.sort_values(by=list(result.columns[0:2]))
-    result = result.reset_index(drop=True)
+    elif len(df_list) == 1:
+        result = df_list[0]
+    else:
+        raise IndexError
+    
+    result['index'] = result.index
+    
+    return result
+
+
+def routine_mode_parity(path: str, number_of_parameters: int):
+    import os, pandas
+
+    df_list = []
+    for file in os.listdir(path):
+        if file.endswith('.csv'):
+            full_path = path + '/' + str(file)
+            df = import_data(path=full_path)
+            df = separate_characteristics_from_params(
+                    dataframe=df,
+                    number_of_params=number_of_parameters
+                )
+            df_list.append(df)
+
+    if len(df_list) > 1:
+        result = pandas.concat(df_list, ignore_index=False)
+        result = result.reset_index(drop=True)
+
+    elif len(df_list) == 1:
+        result = df_list[0]
+    else:
+        raise IndexError
 
     return result
+
+
+def pipeline_modes_parities(paths: tuple[str,str,str]) -> DataFrame:
+    number_of_parameters = 1
+    df_xyz = [routine_mode_parity(path=path, number_of_parameters=number_of_parameters) for path in paths]
+    df = df_xyz[0]
+    df.loc[:,df.columns[number_of_parameters + 1]] = (
+        df.loc[:,df.columns[number_of_parameters + 1]] 
+        + df_xyz[1].loc[:,df.columns[number_of_parameters + 1]]
+        + df_xyz[2].loc[:,df.columns[number_of_parameters + 1]]
+    )
+
+    df = get_parities(dataframe=df, number_of_parameters=number_of_parameters)
+    df['index'] = df.index
+    
+    return df
+
