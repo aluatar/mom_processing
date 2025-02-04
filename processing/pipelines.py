@@ -12,7 +12,7 @@ from .utils import (
     import_data,
     separate_characteristics_from_params,
     get_orbital_numbers,
-    get_parities,
+    get_parities_by_norm,
 )
 
 from abc import (
@@ -208,7 +208,7 @@ def pipeline_modes_vs_formfactor_char(path: str):
     return result
 
 
-def routine_mode_parity(path: str, number_of_parameters: int):
+def routine_mode_parity(path: str, parity_name: str, number_of_parameters: int):
     import os, pandas
 
     df_list = []
@@ -230,22 +230,22 @@ def routine_mode_parity(path: str, number_of_parameters: int):
         result = df_list[0]
     else:
         raise IndexError
+    
+    result = get_parities_by_norm(
+        dataframe=result, 
+        parity_name=parity_name, 
+        number_of_parameters=number_of_parameters
+    )
 
     return result
 
 
 def pipeline_modes_parities(paths: tuple[str,str,str]) -> DataFrame:
     number_of_parameters = 1
-    df_xyz = [routine_mode_parity(path=path, number_of_parameters=number_of_parameters) for path in paths]
-    df = df_xyz[0]
-    df.loc[:,df.columns[number_of_parameters + 1]] = (
-        df.loc[:,df.columns[number_of_parameters + 1]] 
-        + df_xyz[1].loc[:,df.columns[number_of_parameters + 1]]
-        + df_xyz[2].loc[:,df.columns[number_of_parameters + 1]]
-    )
 
-    df = get_parities(dataframe=df, number_of_parameters=number_of_parameters)
-    df['index'] = df.index
+    result = routine_mode_parity(path=paths[0], parity_name='pXZ', number_of_parameters=number_of_parameters)
+    result['pYZ'] = routine_mode_parity(path=paths[1], parity_name='pYZ', number_of_parameters=number_of_parameters)['pYZ']
+    result['pXY'] = routine_mode_parity(path=paths[1], parity_name='pXY', number_of_parameters=number_of_parameters)['pXY']
     
-    return df
+    return result
 

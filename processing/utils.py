@@ -136,8 +136,9 @@ def get_orbital_numbers(
     return new_dataframe
 
 
-def get_parities(
+def get_parities_by_norm(
         dataframe: DataFrame,
+        parity_name: str,
         number_of_parameters: int | None=None,
         ) -> DataFrame:
     """
@@ -154,17 +155,6 @@ def get_parities(
     :return: DataFrame with parity *p* assined to each mode
     """
 
-    parity_map = {
-        0: [-1,-1,-1],
-        1: [1,-1,-1],
-        2: [-1,1,-1],
-        3: [-1,-1,1],
-        4: [1,1,-1],
-        5: [1,-1,1],
-        6: [-1,1,1],
-        7: [1,1,1]
-    }
-
     if number_of_parameters is None:
         number_of_parameters = 0
         for column in dataframe.columns:
@@ -176,23 +166,23 @@ def get_parities(
                 logger.error(msg=f"Incorrect prefix. Define nymber of variable parameters explicitly or apply 'separate_characteristics_from_params' method to the dataframe")
     
 
-    ps_of_modes = [[] for i in range(number_of_parameters + 4)]
+    ps_of_modes = [[] for _ in range(number_of_parameters + 2)]
     columns = dataframe.columns
 
     for row in range(dataframe.index.stop):
         dataframe.loc[row,columns[number_of_parameters+1]:] = abs(dataframe.loc[row,columns[number_of_parameters+1]:])
-        for c in range(number_of_parameters+1, len(dataframe.loc[row])):
+        if dataframe.loc[row,columns[number_of_parameters+1]] > dataframe.loc[row,columns[number_of_parameters+2]]:
+            parity = 1
+        else:
+            parity = -1
 
-            if dataframe.loc[row,columns[c]] == max(dataframe.loc[row, columns[number_of_parameters+1]:]):
-                for i in range(number_of_parameters + 1):
-                    ps_of_modes[i].append(dataframe.loc[row,columns[i]])  
-                parity = parity_map.get(c - number_of_parameters - 1)  
-                ps_of_modes[number_of_parameters+1].append(parity[0])
-                ps_of_modes[number_of_parameters+2].append(parity[1])
-                ps_of_modes[number_of_parameters+3].append(parity[2])
+        for i in range(number_of_parameters + 1):
+            ps_of_modes[i].append(dataframe.loc[row,columns[i]])    
+        ps_of_modes[number_of_parameters+1].append(parity)
+        
                 
     new_columns = [columns[i] for i in range(number_of_parameters + 1)]
-    new_columns.extend(['px','py','pz'])
+    new_columns.append(parity_name)
     new_dataframe = DataFrame(array(ps_of_modes).T, columns=new_columns)
 
     return new_dataframe
